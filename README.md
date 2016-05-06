@@ -1,4 +1,4 @@
-Mastermind written in Ruby  
+# Mastermind
   
 Instructions:  
 Code breaker must guess the code set by Codemaker within 12 turns. The code is a combination of 4 colors from the following set:  
