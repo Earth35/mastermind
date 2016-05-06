@@ -10,7 +10,7 @@ Code breaker must guess the code set by Codemaker within 12 turns. The code is a
  - 'Y'ellow  
 Repetitions are allowed. After each guess, the codebreaker gets the information about how precise the guess is.  
 'Exact' (X) matches represent the number of correct colors in good positions.  
-'Partial' matches (O) represent correct colors, but in wrong positions.  
+'Partial' (O) matches represent correct colors, but in wrong positions.  
 
 Example 1:  
 code:  R G B W  
