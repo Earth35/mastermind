@@ -1,8 +1,9 @@
 class Mastermind
   Colors = ["R", "G", "B", "W", "O", "Y"]
+  attr_writer :codemaker, :codebreaker
   def initialize
-    @codemaker = Player.new("Codemaker")
-    @codebreaker = Player.new("Codebreaker")
+    @codemaker = nil
+    @codebreaker = nil
     @board = Board.new
     @code = []
     @turn = 0
@@ -11,32 +12,70 @@ class Mastermind
   
   public
   
-  def start
+  def choose_mode
+    puts "Would you like to play as Codebreaker (B) or Codemaker (M)?"
+    mode = mode_selection
+    if mode == "B"
+      start_as_codebreaker
+    elsif mode == "M"
+      start_as_codemaker
+    end
+  end
+  
+  private
+  
+  def start_as_codebreaker
     puts "\nPlaying as Codebreaker."
+    self.codemaker = Computer.new("Codemaker")
+    self.codebreaker = Human.new("Codebreaker")
+    game_flow("human")
+  end
+  
+  def start_as_codemaker
+    puts "\nPlaying as Codemaker."
+    self.codemaker = Human.new("Codemaker")
+    self.codebreaker = Computer.new("Codebreaker")
+    game_flow("computer")
+    # modify Human's and Computer's methods to override current behavior
+  end
+  
+  def game_flow (codebreaker)
     puts "Codemaker is setting up the code..."
-    @code = @codemaker.set_code(Colors)
+    @code = @codemaker.set_code
     puts "Done. Codebreaker attempts to guess the code."
-    codebreaker_won = code_guessing(@code)
+    codebreaker_won = code_guessing(@code, codebreaker)
     unless codebreaker_won
       victory(@codemaker)
       puts "Code: #{@code}"
     end
   end
   
-  private
+  def mode_selection
+    game_mode = gets.chomp.upcase
+    until game_mode =~ /^[BM]$/
+      puts "Incorrect input, B/M only:"
+      game_mode = gets.chomp.upcase
+    end
+    return game_mode
+  end
   
-  def code_guessing (code)
+  def code_guessing (code, codebreaker)
+    last_feedback = nil
     while @turn < 12
       puts "Colors: 'R'ed, 'G'reen, 'B'lue, 'W'hite, 'O'range, 'Y'ellow."
       puts "Feedback: X - exact match, O - partial match."
-      puts "Turn #{@turn + 1}. Enter your code (a sequence of 4 letters, don't use separators):"
-      guess = @codebreaker.guess_code
+      puts "Turn #{@turn + 1}. Code:"
+      guess = codebreaker == "human" ? @codebreaker.guess_code : @codebreaker.guess_code(last_feedback) # different guess_code methods for Human and Computer codebreakers
       answer = code.dup
-      result = analyze_guess(guess, answer) # returns an array, result[0] contains number of exact matches, while result[1] contains number of partial matches
+      if codebreaker == "computer"
+        puts guess
+      end
+      result = analyze_guess(guess, answer) # returns an array, result[0] contains number of exact matches, result[1] contains number of partial matches
       if result[0] == 4
         victory(@codebreaker)
         return true
       end
+      last_feedback = result[2]
       @board.guesses << guess
       feedback = result_to_feedback(result)
       @board.feedback << feedback
@@ -50,11 +89,13 @@ class Mastermind
     guess = guess.split(//) # convert strings into arrays
     exact_matches = 0
     partial_matches = 0
+    mask = []
     result = [] # By index: 0 - exact matches, 1 - partial matches
     i = 0
     while i < guess.length
       if guess[i] == code[i]
         exact_matches += 1
+        mask[i] = code[i]
         code[i] = nil
         guess[i] = nil
       end
@@ -70,10 +111,10 @@ class Mastermind
       end
       i += 1
     end
-    return result.push(exact_matches, partial_matches)
+    return result.push(exact_matches, partial_matches, mask)
   end
   
-  def result_to_feedback (result) # result is an array which contains number of exact maches (result[0]) and number of partial matches (result[1])
+  def result_to_feedback (result) # result - an array which contains number of exact maches (result[0]) and number of partial matches (result[1])
     feedback = "X" * result[0] + "O" * result[1]
     return feedback
   end
@@ -111,18 +152,13 @@ class Mastermind
     def initialize (role)
       @role = role
     end
-    
-    public
-    
-    def set_code (superset)
-      i = 1
+  end
+  
+  class Human < Player
+    def set_code
       code = []
-      while i < 5
-        index = rand(6).to_i
-        code << superset[index]
-        i += 1
-      end
-      return code
+      input = self.guess_code
+      code = input.split(//)
     end
     
     def guess_code
@@ -135,7 +171,51 @@ class Mastermind
       return guess
     end
   end
+  
+  class Computer < Player
+    def set_code
+      i = 1
+      code = []
+      while i < 5
+        index = rand(6).to_i
+        code << Colors[index]
+        i += 1
+      end
+      return code
+    end
+  
+    def guess_code (last_feedback = nil)
+      guess = ""
+      if !last_feedback
+        guess = set_code.join
+      else
+        guess = [nil, nil, nil, nil]
+        i = 0
+        while i < last_feedback.length
+          if last_feedback[i]
+            guess[i] = last_feedback[i]
+          end
+          i += 1
+        end
+        i = 0
+        while i < 4
+          if !guess[i]
+            guess[i] = pick_random_color
+          end
+          i += 1
+        end
+        guess = guess.join
+      end
+      return guess
+    end
+    
+    private
+    
+    def pick_random_color
+      index = rand(6).to_i
+      return Colors[index]
+    end
+  end
 end
-
 game = Mastermind.new
-game.start
+game.choose_mode # codemaker mode in progress - need AI improvement
