@@ -22,6 +22,18 @@ class Mastermind
     end
   end
   
+  def play_again?
+    once_more = false
+    puts "Play again? (Y/N)"
+    usr_input = gets.chomp.upcase
+    until usr_input =~ /^[YN]$/
+      puts "Invalid input, Y/N only:"
+      usr_input = gets.chomp.upcase
+    end
+    once_more = true if usr_input == "Y"
+    return once_more
+  end
+  
   private
   
   def start_as_codebreaker
@@ -217,5 +229,10 @@ class Mastermind
     end
   end
 end
-game = Mastermind.new
-game.choose_mode # codemaker mode in progress - need AI improvement
+
+start_game = true
+while start_game
+  game = Mastermind.new
+  game.choose_mode
+  start_game = game.play_again?
+end
