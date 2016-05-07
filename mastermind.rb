@@ -100,28 +100,35 @@ class Mastermind
     guess = guess.split(//)
     exact_matches = 0
     partial_matches = 0
-    mask = [] # array of correctly guessed positions used by CPU to break the code (it cheats a little); indexation parallel with guess
-    result = [] # By index: 0 - exact matches, 1 - partial matches, 2 - mask
+    mask = [] # contains two arrays:
+    # [0] array of correctly guessed positions used by CPU to break the code (it cheats a little); indexation parallel with guess
+    # [1] array of good colors in wrong positions; indexation parallel with guess
+    exact_match_mask = []
+    partial_match_mask = []
+    result = [] # By index: 0 - exact matches, 1 - partial matches, 2 - mask (AoA)
     i = 0
     while i < guess.length
       if guess[i] == code[i]
         exact_matches += 1
-        mask[i] = code[i]
+        exact_match_mask[i] = code[i]
         code[i] = nil
         guess[i] = nil
       end
       i += 1
     end
+    mask.push(exact_match_mask)
     i = 0
     while i < guess.length
       if code.include?(guess[i]) && guess[i] != nil
         partial_matches += 1
         position = code.index(guess[i])
+        partial_match_mask[i] = (guess[i])
         code[position] = nil
         guess[i] = nil
       end
       i += 1
     end
+    mask.push(partial_match_mask)
     return result.push(exact_matches, partial_matches, mask)
   end
   
@@ -203,22 +210,9 @@ class Mastermind
       if !last_feedback
         guess = set_code.join # first guess is always a random combination of colors
       else
-        guess = [nil, nil, nil, nil]
-        i = 0
-        while i < last_feedback.length
-          if last_feedback[i] # element in last_feedback mustn't be nil
-            guess[i] = last_feedback[i] # see (1)
-          end
-          i += 1
-        end
-        i = 0
-        while i < 4
-          if !guess[i]
-            guess[i] = pick_random_color # see (2)
-          end
-          i += 1
-        end
-        guess = guess.join
+        guess = include_exact_matches([nil, nil, nil, nil], last_feedback)
+        guess = include_partial_matches(guess, last_feedback)
+        guess = fill_gaps(guess).join
       end
       return guess
     end
@@ -229,6 +223,44 @@ class Mastermind
       index = rand(6).to_i
       return Colors[index]
     end
+    
+    def include_exact_matches (guess, last_feedback)
+      i = 0
+      while i < last_feedback[0].length
+        if last_feedback[0][i] # element in last_feedback mustn't be nil
+          guess[i] = last_feedback[0][i] # see (1)
+        end
+        i += 1
+      end
+      return guess
+    end
+    
+    def include_partial_matches (guess, last_feedback)
+      i = 0
+      while i < last_feedback[1].length
+        if last_feedback[1][i]
+          new_position = rand(4)
+          while new_position == i || guess[new_position]
+            new_position = rand(4)
+          end
+          guess[new_position] = last_feedback[1][i]
+        end
+        i += 1
+      end
+      return guess
+    end
+    
+    def fill_gaps (guess)
+      i = 0
+      while i < 4
+        if !guess[i]
+          guess[i] = pick_random_color # see (2)
+        end
+        i += 1
+      end
+      return guess
+    end
+    
   end
 end
 
