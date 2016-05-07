@@ -48,14 +48,13 @@ class Mastermind
     self.codemaker = Human.new("Codemaker")
     self.codebreaker = Computer.new("Codebreaker")
     game_flow("computer")
-    # modify Human's and Computer's methods to override current behavior
   end
   
   def game_flow (codebreaker)
     puts "Codemaker is setting up the code..."
     @code = @codemaker.set_code
     puts "Done. Codebreaker attempts to guess the code."
-    codebreaker_won = code_guessing(@code, codebreaker)
+    codebreaker_won = code_guessing(@code, codebreaker) # starts guessing phase, returns true on Codebreaker's victory, otherwise returns false; turn limit: 12
     unless codebreaker_won
       victory(@codemaker)
       puts "Code: #{@code}"
@@ -82,7 +81,7 @@ class Mastermind
       if codebreaker == "computer"
         puts guess
       end
-      result = analyze_guess(guess, answer) # returns an array, result[0] contains number of exact matches, result[1] contains number of partial matches
+      result = analyze_guess(guess, answer)
       if result[0] == 4
         victory(@codebreaker)
         return true
@@ -98,11 +97,11 @@ class Mastermind
   end
   
   def analyze_guess (guess, code)
-    guess = guess.split(//) # convert strings into arrays
+    guess = guess.split(//)
     exact_matches = 0
     partial_matches = 0
-    mask = []
-    result = [] # By index: 0 - exact matches, 1 - partial matches
+    mask = [] # array of correctly guessed positions used by CPU to break the code (it cheats a little); indexation parallel with guess
+    result = [] # By index: 0 - exact matches, 1 - partial matches, 2 - mask
     i = 0
     while i < guess.length
       if guess[i] == code[i]
@@ -173,6 +172,7 @@ class Mastermind
       code = input.split(//)
     end
     
+    # get a guess from human Codebreaker and validate it; also gets and validates code from human Codemaker
     def guess_code
       guess = gets.chomp.upcase
       until guess =~ /^[RGBWOY]{4}$/
@@ -185,6 +185,7 @@ class Mastermind
   end
   
   class Computer < Player
+    # set random code for human Codebreaker or generate random guess in turn 1 when CPU is the Codebreaker
     def set_code
       i = 1
       code = []
@@ -195,24 +196,25 @@ class Mastermind
       end
       return code
     end
-  
+    
+    # move perfect matches to guess (1 - parallel indexation with last_feedback), then randomly generate other characters to fill the gaps (2)
     def guess_code (last_feedback = nil)
       guess = ""
       if !last_feedback
-        guess = set_code.join
+        guess = set_code.join # first guess is always a random combination of colors
       else
         guess = [nil, nil, nil, nil]
         i = 0
         while i < last_feedback.length
-          if last_feedback[i]
-            guess[i] = last_feedback[i]
+          if last_feedback[i] # element in last_feedback mustn't be nil
+            guess[i] = last_feedback[i] # see (1)
           end
           i += 1
         end
         i = 0
         while i < 4
           if !guess[i]
-            guess[i] = pick_random_color
+            guess[i] = pick_random_color # see (2)
           end
           i += 1
         end
