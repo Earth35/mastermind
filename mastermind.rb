@@ -52,7 +52,7 @@ class Mastermind
   
   def game_flow (codebreaker)
     puts "Codemaker is setting up the code..."
-    @code = @codemaker.set_code
+    @code = @codemaker.set_code # ask the player for input or generate a random code, depending on Codemaker's class
     puts "Done. Codebreaker attempts to guess the code."
     codebreaker_won = code_guessing(@code, codebreaker) # starts guessing phase, returns true on Codebreaker's victory, otherwise returns false; turn limit: 12
     unless codebreaker_won
@@ -77,8 +77,8 @@ class Mastermind
       puts "Feedback: X - exact match, O - partial match."
       puts "Turn #{@turn + 1}. Code:"
       guess = codebreaker == "human" ? @codebreaker.guess_code : @codebreaker.guess_code(last_feedback) # different guess_code methods for Human and Computer codebreakers
-      answer = code.dup
-      if codebreaker == "computer"
+      answer = code.dup # duplicate the array, modify it during guess analysis
+      if codebreaker == "computer" # display CPU's guess if the player is playing as Codemaker
         puts guess
       end
       result = analyze_guess(guess, answer)
@@ -101,16 +101,18 @@ class Mastermind
     exact_matches = 0
     partial_matches = 0
     mask = [] # contains two arrays:
-    # [0] array of correctly guessed positions used by CPU to break the code (it cheats a little); indexation parallel with guess
-    # [1] array of good colors in wrong positions; indexation parallel with guess
+    # [0] - array of correctly guessed positions used by CPU to break the code (it cheats a little); indexation parallel with guess
+    # [1] - array of good colors in wrong positions; indexation parallel with guess
     exact_match_mask = []
     partial_match_mask = []
-    result = [] # By index: 0 - exact matches, 1 - partial matches, 2 - mask (AoA)
+    result = [] # By index: 0 - exact matches (number), 1 - partial matches (number), 2 - mask (AoA)
+    # check elements in guess and code under the same indexes to find perfect matches
     i = 0
     while i < guess.length
       if guess[i] == code[i]
         exact_matches += 1
         exact_match_mask[i] = code[i]
+        # replace detected elements with nil
         code[i] = nil
         guess[i] = nil
       end
@@ -119,10 +121,13 @@ class Mastermind
     mask.push(exact_match_mask)
     i = 0
     while i < guess.length
+      # find partial matches
       if code.include?(guess[i]) && guess[i] != nil
         partial_matches += 1
+        # find position of current 'guess' element in 'code'
         position = code.index(guess[i])
         partial_match_mask[i] = (guess[i])
+        # replace matching elements with nil
         code[position] = nil
         guess[i] = nil
       end
@@ -228,7 +233,7 @@ class Mastermind
       i = 0
       while i < last_feedback[0].length
         if last_feedback[0][i] # element in last_feedback mustn't be nil
-          guess[i] = last_feedback[0][i] # see (1)
+          guess[i] = last_feedback[0][i]
         end
         i += 1
       end
